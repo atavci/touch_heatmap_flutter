@@ -87,36 +87,68 @@ class HeatmapPainter extends CustomPainter {
     for (final cluster in clusters) {
       if (cluster.isEmpty) continue;
 
-      final avgX = cluster.map((p) => p.dx).reduce((a, b) => a + b) / cluster.length;
-      final avgY = cluster.map((p) => p.dy).reduce((a, b) => a + b) / cluster.length;
-      final center = Offset(avgX, avgY);
-
-      final ratio = (cluster.length / maxSize).clamp(0.0, 1.0);
-
-      Color clusterColor;
-      if (ratio < 0.5) {
-        final r = ratio * 2;
-        clusterColor = Color.lerp(Colors.green, Colors.yellow, r)!;
-      } else {
-        final r = (ratio - 0.5) * 2;
-        clusterColor = Color.lerp(Colors.yellow, Colors.red, r)!;
-      }
-
-      final radius = 10.0 + (cluster.length * 2.0 * ratio);
-
-      final gradientPaint = Paint()
-        ..shader = RadialGradient(
-          colors: [
-            clusterColor.withOpacity(0.6),
-            Colors.teal.withOpacity(.2),
-          ],
-          stops: const [0.3, 1.0],
-        ).createShader(Rect.fromCircle(center: center, radius: radius));
-
-      canvas.drawCircle(center, radius, gradientPaint);
+      Offset center = _drawCluster(cluster, maxSize, canvas);
+      _drawClusterCount(cluster, center, canvas);
     }
   }
 
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) => true;
+
+  void _drawClusterCount(List<Offset> cluster, Offset center, Canvas canvas) {
+    final textSpan = TextSpan(
+      text: '${cluster.length}',
+      style: const TextStyle(
+        color: Colors.black,
+        fontSize: 14,
+        fontWeight: FontWeight.bold,
+      ),
+    );
+
+    final textPainter = TextPainter(
+      text: textSpan,
+      textAlign: TextAlign.center,
+      textDirection: TextDirection.ltr,
+    );
+    textPainter.layout();
+
+    final textOffset = Offset(
+      center.dx - textPainter.width / 2,
+      center.dy - textPainter.height / 2,
+    );
+    textPainter.paint(canvas, textOffset);
+  }
+
+  Offset _drawCluster(List<Offset> cluster, int maxSize, Canvas canvas) {
+    final avgX =
+        cluster.map((p) => p.dx).reduce((a, b) => a + b) / cluster.length;
+    final avgY =
+        cluster.map((p) => p.dy).reduce((a, b) => a + b) / cluster.length;
+    final center = Offset(avgX, avgY);
+
+    final ratio = (cluster.length / maxSize).clamp(0.0, 1.0);
+
+    Color clusterColor;
+    if (ratio < 0.5) {
+      final r = ratio * 2;
+      clusterColor = Color.lerp(Colors.green, Colors.yellow, r)!;
+    } else {
+      final r = (ratio - 0.5) * 2;
+      clusterColor = Color.lerp(Colors.yellow, Colors.red, r)!;
+    }
+
+    final radius = 10.0 + (cluster.length * 2.0 * ratio);
+
+    final gradientPaint = Paint()
+      ..shader = RadialGradient(
+        colors: [
+          clusterColor.withOpacity(0.6),
+          Colors.teal.withOpacity(.2),
+        ],
+        stops: const [0.3, 1.0],
+      ).createShader(Rect.fromCircle(center: center, radius: radius));
+
+    canvas.drawCircle(center, radius, gradientPaint);
+    return center;
+  }
 }
